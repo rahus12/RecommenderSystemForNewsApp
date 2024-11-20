@@ -59,11 +59,17 @@ class Recommender:
             distances, idxs = self.index.search(article_embed, top_k)
             
             # Prepare results
-            similar_articles = [self.docs.iloc[idx]['id'] for idx in range(len(idxs[0]))]
+            similar_articles = [self.docs.iloc[idx]['id'] for idx in idxs[0]]
             
             return similar_articles
             
         except Exception as e:
             print(f"Error finding similar articles: {str(e)}")
             raise
+
+if __name__ == "__main__":
+    recommender = Recommender()
+    recommender.read_docs("articles.csv")
+    recommender.generate_embeddings()
+    recommender.create_vectorDb()
 
