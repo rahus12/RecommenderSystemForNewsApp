@@ -14,17 +14,18 @@ class Recommender:
 
     def read_docs(self, path):
         self.docs = pd.read_csv(path, index_col=0)
-        self.docs = self.docs.drop(columns="sentiment", axis=1)
-        self.docs = self.docs.dropna()
+        self.docs = self.docs.fillna("")
+        # self.docs = self.docs.drop(columns="sentiment", axis=1)
+        # self.docs = self.docs.dropna()
         
     
     def generate_embeddings(self):
-        self.embeddings = self.model.encode(self.docs[["title","content", "category"]].values, show_progress_bar=True)
+        self.embeddings = self.model.encode(self.docs[["title","content", "category","sentiment"]].values, show_progress_bar=True)
     
     def create_vectorDb(self):
         self.index = faiss.IndexFlatL2(self.embeddings.shape[1])
         self.index.add(self.embeddings)
-        faiss.write_index(self.index, "news_index.index", 3)
+        faiss.write_index(self.index, "news_index_latest.index", 3)
     
     def load_vectorDb(self):
         self.index = faiss.read_index("news_index.index")
@@ -50,7 +51,7 @@ class Recommender:
         """
         try:
             # Combine article fields similar to training data
-            article_text = f"{article['title']} {article['content']} {article['category']}"
+            article_text = f"{article.get('title', '')} {article.get('content', '')} {article.get('category', '')} {article.get('sentiment', '')}"
             
             # Generate embedding for input article
             article_embed = self.model.encode([article_text])
@@ -69,7 +70,7 @@ class Recommender:
 
 if __name__ == "__main__":
     recommender = Recommender()
-    recommender.read_docs("articles.csv")
+    recommender.read_docs("articles 22-Nov-2024 (125010)_1.csv")
     recommender.generate_embeddings()
     recommender.create_vectorDb()
 

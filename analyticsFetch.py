@@ -4,6 +4,8 @@ import time
 from datetime import datetime, timedelta
 import pytz
 import sqlite3
+import pandas as pd
+import requests
 
 
 class AnalyticsFetcher:
@@ -11,13 +13,20 @@ class AnalyticsFetcher:
         self.db = self.initialize_firestore()
         self.last_fetch_time = None
         self.conn = self.initialize_database()
+        self.data = pd.read_csv("articles.csv")
+        self.url = "http://127.0.0.1:5000/recommend"
+        self.headers = {"Content-Type": "application/json"}
+        self.cred = credentials.Certificate("ServiceAccountKey.json")
+        # firebase_admin.initialize_app(self.cred)
+        self.firestore = firestore.client()
+        self.doc_ref = self.firestore.collection('recommendations')
 
     def initialize_database(self):
         """Initialize SQLite database and create table if it doesn't exist"""
         conn = sqlite3.connect('article_analytics.db')
         cursor = conn.cursor()
         
-        # cursor.execute('DROP TABLE IF EXISTS article_analytics')
+        cursor.execute('DROP TABLE IF EXISTS article_analytics')
 
         # Create table if it doesn't exist - note the new normalized_time_spent field
         cursor.execute('''
@@ -29,7 +38,8 @@ class AnalyticsFetcher:
                 timeSpent INTEGER NOT NULL,
                 normalized_time_spent FLOAT NOT NULL,
                 content_length INTEGER NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                sentiment TEXT                       
             )
         ''')
         
@@ -68,7 +78,8 @@ class AnalyticsFetcher:
                     article.get('category', 'unknown'),
                     time_spent,
                     normalized_time,
-                    content_length
+                    content_length,
+                    article.get('sentiment', 'unknown')
                 )
                 records.append(record)
             else:
@@ -82,9 +93,10 @@ class AnalyticsFetcher:
                 category, 
                 timeSpent, 
                 normalized_time_spent,
-                content_length
+                content_length,
+                sentiment
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', records)
         
         self.conn.commit()
@@ -152,8 +164,52 @@ class AnalyticsFetcher:
             return []
         except Exception as e:
             print(f"Error fetching articles: {str(e)}")
-            return []
+            return []    
+    
+    def get_top_articleIds_by_user(self, user_id: str, limit: int = 5) -> list[dict]:
+        """Get top articles by user"""
+        cursor = self.conn.cursor()
+        cursor.execute(f'''
+            select articleId from article_analytics
+            where userId = "{user_id}"
+            ORDER by normalized_time_spent DESC
+            limit {limit} 
+        ''', (user_id, limit))
+        data = cursor.fetchall()
+        articleIds = [d[0] for d in data]
+        return articleIds
+    
+    def get_user_ids(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT DISTINCT userId FROM article_analytics;")
+        users = cursor.fetchall()
+        userIds = [user[0] for user in users]
+        return userIds
+    
+    def get_recommendations(self) -> None:
+        userIds = self.get_user_ids()
 
+        for userId in userIds:
+            response = []
+            try:
+                articleIds = self.get_top_articleIds_by_user(userId)
+                articles = self.data[self.data['id'].isin(articleIds)]
+                for index in range(len(articles)):
+                    payload = {
+                        "title": articles.get('title', " ").iloc[index],
+                        "content": articles.get('content', " ").iloc[index], 
+                    }
+                    # send this to the Flask server running the ML code
+                    response.append(requests.post(self.url, json=payload, headers=self.headers).json()) # this gives a list of recommendations(dict)
+                recommendations = [item for sublist in response for item in sublist.get('recommendations', "")]
+                self.doc_ref.add({
+                    "userId": userId,
+                    "recommendations": recommendations
+                })
+
+            except Exception as e:
+                print(f"Error fetching recommendations for user {userId}: {str(e)}")
+                continue
     def fetch_analytics(self):
         # Initialize Firestore and SQLite database        
         
@@ -169,14 +225,18 @@ class AnalyticsFetcher:
         try:
             while True:
                 try:
-                    # Fetch new articles and save to database
+                    # Fetch new articles and save to Sqlite3 database
                     new_articles = self.fetch_new_articles()
                     
                     # Update last fetch time
                     self.last_fetch_time = datetime.now(pytz.UTC)
                     
+                    # Run the recommendation part only if new analytics are found
+                    # if new_articles:
+                    #     self.get_recommendations()
+
                     # Sleep for the specified interval
-                    time.sleep(FETCH_INTERVAL)
+                    time.sleep(FETCH_INTERVAL)                    
                     
                 except KeyboardInterrupt:
                     raise
@@ -188,4 +248,10 @@ class AnalyticsFetcher:
             # Clean up database connection
             self.conn.close()
 
-AnalyticsFetcher().fetch_analytics()
+
+
+if __name__ == "__main__":
+    analyticsFetcher = AnalyticsFetcher()
+    analyticsFetcher.fetch_analytics()
+
+

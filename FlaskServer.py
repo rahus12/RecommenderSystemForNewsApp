@@ -41,7 +41,7 @@ def get_recommendations():
         
         # Validate input
         required_fields = ['title', 'content', 'category']
-        if not all(field in data for field in required_fields):
+        if not any(field in data for field in required_fields):
             return jsonify({
                 'error': 'Missing required fields. Please provide title, content, and category'
             }), 400

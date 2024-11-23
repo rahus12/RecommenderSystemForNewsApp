@@ -40,12 +40,12 @@ class FetchAllNews:
         # Initialize Firestore and SQLite database    
         
         # Set initial fetch time
-        self.last_fetch_time = datetime.now(pytz.UTC) - timedelta(minutes=10)
+        # self.last_fetch_time = datetime.now(pytz.UTC) - timedelta(minutes=10)
         
         # Define fetch interval (in seconds)
         FETCH_INTERVAL = 10000
         
-        print(f"Starting article fetcher. Will check every {FETCH_INTERVAL} seconds...")
+        print(f"Starting article fetcher")
         
         try:
             while True:
@@ -53,7 +53,7 @@ class FetchAllNews:
                     # Fetch new articles and save to database
                     new_articles = self.fetch_all_news_articles()
 
-                    pd.DataFrame(new_articles).to_csv('articles.csv', index=True)
+                    pd.DataFrame(new_articles).to_csv(f'articles {datetime.now().strftime("%d-%b-%Y (%H%M%S)")}.csv', index=True)
                     
                     # Update last fetch time
                     self.last_fetch_time = datetime.now(pytz.UTC)
