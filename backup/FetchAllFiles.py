@@ -52,7 +52,8 @@ class FetchAllNews:
             # Fetch new articles and save to database
             new_articles = self.fetch_all_news_articles()
 
-            pd.DataFrame(new_articles).to_csv(f'articles {datetime.now().strftime("%d-%b-%Y (%H%M%S)")}.csv', index=True)
+            # pd.DataFrame(new_articles).to_csv(f'articles {datetime.now().strftime("%d-%b-%Y (%H%M%S)")}.csv', index=True)
+            pd.DataFrame(new_articles).to_csv(f'../articles.csv', index=True)
             
             # Update last fetch time
             self.last_fetch_time = datetime.now(pytz.UTC)

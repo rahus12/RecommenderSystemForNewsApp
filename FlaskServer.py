@@ -23,6 +23,7 @@ def initialize():
         if not os.path.exists("news_index.index"):
             logger.info("Creating new vector database...")
             recommender.read_docs("articles.csv")  # Replace with your data path
+            logger.info("Articles reading completed Generating embeddings...")
             recommender.generate_embeddings()
             recommender.create_vectorDb()
         else:
