@@ -25,7 +25,7 @@ class Recommender:
     def create_vectorDb(self):
         self.index = faiss.IndexFlatL2(self.embeddings.shape[1])
         self.index.add(self.embeddings)
-        faiss.write_index(self.index, "news_index_latest.index", 3)
+        faiss.write_index(self.index, "news_index.index", 3)
     
     def load_vectorDb(self):
         self.index = faiss.read_index("news_index.index")
@@ -70,7 +70,7 @@ class Recommender:
 
 if __name__ == "__main__":
     recommender = Recommender()
-    recommender.read_docs("articles 22-Nov-2024 (125010)_1.csv")
+    recommender.read_docs("articles.csv")
     recommender.generate_embeddings()
     recommender.create_vectorDb()
 
