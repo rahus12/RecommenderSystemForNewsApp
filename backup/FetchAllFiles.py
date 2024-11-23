@@ -47,26 +47,25 @@ class FetchAllNews:
         
         print(f"Starting article fetcher")
         
+        
         try:
-            while True:
-                try:
-                    # Fetch new articles and save to database
-                    new_articles = self.fetch_all_news_articles()
+            # Fetch new articles and save to database
+            new_articles = self.fetch_all_news_articles()
 
-                    pd.DataFrame(new_articles).to_csv(f'articles {datetime.now().strftime("%d-%b-%Y (%H%M%S)")}.csv', index=True)
-                    
-                    # Update last fetch time
-                    self.last_fetch_time = datetime.now(pytz.UTC)
-                    
-                    # Sleep for the specified interval
-                    time.sleep(FETCH_INTERVAL)
-                    
-                except KeyboardInterrupt:
-                    raise
-                except Exception as e:
-                    print(f"Error in main loop: {str(e)}")
-                    # Wait a bit before retrying
-                    time.sleep(10)
+            pd.DataFrame(new_articles).to_csv(f'articles {datetime.now().strftime("%d-%b-%Y (%H%M%S)")}.csv', index=True)
+            
+            # Update last fetch time
+            self.last_fetch_time = datetime.now(pytz.UTC)
+            
+            # Sleep for the specified interval
+            time.sleep(FETCH_INTERVAL)
+            
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            print(f"Error in main loop: {str(e)}")
+            # Wait a bit before retrying
+            time.sleep(10)
         finally:
             # Clean up database connection
             # sql_conn.close()
