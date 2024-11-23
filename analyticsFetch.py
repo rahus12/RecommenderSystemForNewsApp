@@ -232,8 +232,8 @@ class AnalyticsFetcher:
                     self.last_fetch_time = datetime.now(pytz.UTC)
                     
                     # Run the recommendation part only if new analytics are found
-                    # if new_articles:
-                    #     self.get_recommendations()
+                    if new_articles:
+                        self.get_recommendations()
 
                     # Sleep for the specified interval
                     time.sleep(FETCH_INTERVAL)                    
