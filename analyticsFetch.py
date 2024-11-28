@@ -1,3 +1,4 @@
+import random
 import firebase_admin
 from firebase_admin import credentials, firestore
 import time
@@ -173,8 +174,8 @@ class AnalyticsFetcher:
             select articleId from article_analytics
             where userId = "{user_id}"
             ORDER by normalized_time_spent DESC
-            limit {limit} 
-        ''', (user_id, limit))
+            limit {limit}
+        ''')
         data = cursor.fetchall()
         articleIds = [d[0] for d in data]
         return articleIds
@@ -193,7 +194,9 @@ class AnalyticsFetcher:
             response = []
             try:
                 articleIds = self.get_top_articleIds_by_user(userId)
+                print("top articleIds: ", articleIds)
                 articles = self.data[self.data['id'].isin(articleIds)]
+                print("articles: ", articles)
                 for index in range(len(articles)):
                     payload = {
                         "title": articles.get('title', " ").iloc[index],
@@ -203,7 +206,7 @@ class AnalyticsFetcher:
                     response.append(requests.post(self.url, json=payload, headers=self.headers).json()) # this gives a list of recommendations(dict)
                 recommendations = [item for sublist in response for item in sublist.get('recommendations', "")]
                 self.doc_ref.add({
-                    "userId": userId,
+                    "userRef": self.firestore.collection("users").document(userId),
                     "recommendations": recommendations
                 })
 
