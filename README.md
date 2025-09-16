@@ -1,4 +1,4 @@
-# This is the Analytics part of the News App
+# This is the Recommender system of the News App
 Steps to run:
 
 1. From the backup folder run "FetchAllFiles" to get the csv output of all the articles, name it prefereablly as "articles.csv"
